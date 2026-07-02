@@ -1,0 +1,43 @@
+{
+  "name": "pi-sandbox",
+  "version": "0.1.0",
+  "description": "Pi extension that provides OS-level sandboxing for bash commands and filesystem path policy enforcement for read/write/edit tools",
+  "keywords": [
+    "pi-package"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saltfishpr/pi-sandbox.git"
+  },
+  "author": "saltfishpr",
+  "license": "MIT",
+  "homepage": "https://github.com/saltfishpr/pi-sandbox#readme",
+  "bugs": {
+    "url": "https://github.com/saltfishpr/pi-sandbox/issues"
+  },
+  "pi": {
+    "extensions": [
+      "./src/index.ts"
+    ]
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sandbox-runtime": "^0.0.61",
+    "defu": "^6.1.7",
+    "typebox": "^1.3.1"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-ai": "*",
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "^0.80.2",
+    "@earendil-works/pi-coding-agent": "^0.80.2",
+    "@earendil-works/pi-tui": "^0.80.2",
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3"
+  }
+}
