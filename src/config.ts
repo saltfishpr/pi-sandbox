@@ -22,13 +22,6 @@ export const DEFAULT_CONFIG: SandboxConfig = {
   },
 };
 
-export function loadConfig(cwd: string): SandboxConfig {
-  const { globalPath, projectPath } = getConfigPaths(cwd);
-  const globalConfig = readOrEmptyConfig(globalPath);
-  const projectConfig = readOrEmptyConfig(projectPath);
-  return defu(projectConfig, globalConfig, DEFAULT_CONFIG) as SandboxConfig;
-}
-
 export function getConfigPaths(cwd: string): {
   globalPath: string;
   projectPath: string;
@@ -37,6 +30,13 @@ export function getConfigPaths(cwd: string): {
     globalPath: join(getAgentDir(), "extensions", "sandbox.json"),
     projectPath: join(cwd, CONFIG_DIR_NAME, "extensions", "sandbox.json"),
   };
+}
+
+export function loadConfig(cwd: string): SandboxConfig {
+  const { globalPath, projectPath } = getConfigPaths(cwd);
+  const globalConfig = readOrEmptyConfig(globalPath);
+  const projectConfig = readOrEmptyConfig(projectPath);
+  return defu(projectConfig, globalConfig, DEFAULT_CONFIG) as SandboxConfig;
 }
 
 function readOrEmptyConfig(configPath: string): Partial<SandboxConfig> {

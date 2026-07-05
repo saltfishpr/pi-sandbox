@@ -1,9 +1,36 @@
 import { SandboxManager, type SandboxAskCallback } from "@anthropic-ai/sandbox-runtime";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { loadConfig, type SandboxConfig } from "./config.js";
 import { EOL } from "os";
 
 const enableLogMonitor = true;
+
+// The patched @anthropic-ai/sandbox-runtime reads process.env.PI_SANDBOX_CWD to
+// resolve DANGEROUS_FILES (.bashrc, .env, .gitconfig, …). Pointing it at an
+// empty scratch dir makes every resolved path both non-existent and outside
+// the user's allowedWritePaths, so generateFilesystemArgs skips them entirely
+// and bwrap never creates mount-point files in the workspace.
+let bashScratchDir: string | undefined;
+
+export function getBashScratchDir(): string {
+  if (!bashScratchDir) {
+    bashScratchDir = mkdtempSync(join(tmpdir(), "pi-sandbox-"));
+  }
+  return bashScratchDir;
+}
+
+function cleanupBashScratchDir(): void {
+  if (!bashScratchDir) return;
+  try {
+    rmSync(bashScratchDir, { recursive: true, force: true });
+  } catch {
+    // best-effort
+  }
+  bashScratchDir = undefined;
+}
 
 function createNetworkAskCallback(): SandboxAskCallback {
   return async () => true;
@@ -50,6 +77,7 @@ export async function reinitializeSandbox(
 
 export async function resetSandbox(): Promise<void> {
   await SandboxManager.reset();
+  cleanupBashScratchDir();
 }
 
 const SANDBOX_VIOLATION_HINT =

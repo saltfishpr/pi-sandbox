@@ -1,0 +1,13 @@
+diff --git a/dist/sandbox/linux-sandbox-utils.js b/dist/sandbox/linux-sandbox-utils.js
+index 135438668f40ca3b3b53f12e331ade4350cd30ac..7729fbc947d5981b8990fb1e9a7d6775d96283fb 100644
+--- a/dist/sandbox/linux-sandbox-utils.js
++++ b/dist/sandbox/linux-sandbox-utils.js
+@@ -100,7 +100,7 @@ function findFirstNonExistentComponent(targetPath) {
+  * With --max-depth limiting, this is fast enough to run on each command without memoization.
+  */
+ async function linuxGetMandatoryDenyPaths(ripgrepConfig = { command: 'rg' }, maxDepth = DEFAULT_MANDATORY_DENY_SEARCH_DEPTH, allowGitConfig = false, abortSignal) {
+-    const cwd = process.cwd();
++    const cwd = process.env.PI_SANDBOX_CWD ?? process.cwd();
+     // Use provided signal or create a fallback controller
+     const fallbackController = new AbortController();
+     const signal = abortSignal ?? fallbackController.signal;

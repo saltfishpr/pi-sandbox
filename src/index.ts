@@ -1,3 +1,4 @@
+import { getPlatform } from "@anthropic-ai/sandbox-runtime/dist/utils/platform.js";
 import type {
   EditToolCallEvent,
   ExtensionAPI,
@@ -8,15 +9,19 @@ import type {
   WriteToolCallEvent,
 } from "@earendil-works/pi-coding-agent";
 import { createBashToolDefinition, isToolCallEventType, SettingsManager } from "@earendil-works/pi-coding-agent";
+import { existsSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import { Type } from "typebox";
 
 import { createSandboxedBashOps } from "./bash.js";
 import type { SandboxConfig } from "./config.js";
 import { addReadPathToConfig, addWritePathToConfig, getConfigPaths, loadConfig } from "./config.js";
 import { canonicalizePath, matchesPattern } from "./paths.js";
-import type { FilesystemAccess, PermissionChoice } from "./permissions.js";
-import { promptRequestPermission } from "./permissions.js";
 import { annotateSandboxViolation, initializeSandbox, reinitializeSandbox, resetSandbox } from "./sandbox.js";
+import { Selector, SelectorItem } from "./components/selector.js";
+
+type FilesystemAccess = "read" | "write";
+type PermissionChoice = "abort" | "session" | "project" | "global";
 
 interface SandboxPermissionRequest {
   access: FilesystemAccess;
@@ -58,10 +63,10 @@ export default function (pi: ExtensionAPI) {
   }
 
   async function applyPermissionChoice(
+    ctx: ExtensionContext,
     access: FilesystemAccess,
     path: string,
     choice: PermissionChoice,
-    ctx: ExtensionContext,
   ): Promise<void> {
     if (choice === "abort") return;
 
@@ -78,6 +83,58 @@ export default function (pi: ExtensionAPI) {
     }
 
     await reinitializeIfNeeded(ctx.cwd);
+  }
+
+  async function promptRequestPermission(
+    ctx: ExtensionContext,
+    access: FilesystemAccess,
+    path: string,
+  ): Promise<PermissionChoice> {
+    if (!ctx.hasUI) return "abort";
+
+    const accessLabel = access === "read" ? "Read" : "Write";
+
+    const result = await ctx.ui.custom<PermissionChoice>((tui, theme, _kb, done) => {
+      const selector = new Selector(theme, {
+        title: `${accessLabel} file`,
+        description: `${accessLabel} access requested for: ${path}`,
+        question: "Grant this permission?",
+        items: [
+          {
+            value: "abort",
+            label: "Abort (keep blocked)",
+          },
+          {
+            value: "session",
+            label: "Allow for this session only",
+          },
+          {
+            value: "project",
+            label: "Allow for this project",
+          },
+          {
+            value: "global",
+            label: "Allow for all projects",
+          },
+        ],
+        footer: "↑↓ navigate • enter select • esc cancel",
+        onSelect: done,
+        onCancel: () => done("abort"),
+      });
+
+      return {
+        render: (w) => selector.render(w),
+        handleInput: (data) => {
+          selector.handleInput(data);
+          tui.requestRender();
+        },
+        invalidate: () => selector.invalidate(),
+      };
+    });
+
+    const choice = result ?? "abort";
+    await applyPermissionChoice(ctx, access, path, choice);
+    return choice;
   }
 
   async function handleReadToolCall(
@@ -100,8 +157,6 @@ export default function (pi: ExtensionAPI) {
         reason: `Sandbox permission denied by user: read "${filePath}"`,
       };
     }
-
-    await applyPermissionChoice("read", filePath, choice, ctx);
   }
 
   async function handleWriteToolCall(
@@ -129,8 +184,6 @@ export default function (pi: ExtensionAPI) {
         reason: `Sandbox permission denied by user: write "${path}"`,
       };
     }
-
-    await applyPermissionChoice("write", path, choice, ctx);
   }
 
   async function handleToolCall(event: ToolCallEvent, ctx: ExtensionContext): Promise<ToolCallEventResult | void> {
@@ -171,7 +224,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   async function requestSandboxPermission(request: SandboxPermissionRequest, ctx: ExtensionContext): Promise<string> {
-    const path = canonicalizePath(request.path);
+    let path = canonicalizePath(request.path);
     const config = loadConfig(ctx.cwd);
     const allowRead = getEffectiveAllowRead(ctx.cwd);
     const allowWrite = getEffectiveAllowWrite(ctx.cwd);
@@ -188,6 +241,21 @@ export default function (pi: ExtensionAPI) {
     }
 
     if (request.access === "write") {
+      if (getPlatform() === "linux") {
+        // bwrap 想要 mv/rm 文件，必须对父目录有写权限，否则会报错
+        path = dirname(path);
+        if (!existsSync(path)) {
+          try {
+            // bwrap can only bind an existing file writable; a missing target under
+            // --ro-bind / / silently drops the write allow and the redirect hits EROFS.
+            mkdirSync(path, { recursive: true });
+          } catch {
+            // best-effort; if we cannot create, bwrap will still drop the allow and
+            // the user will see the EROFS error, matching prior behaviour.
+          }
+        }
+      }
+
       if (matchesPattern(path, denyWrite)) {
         return `Sandbox permission unavailable: write "${path}" is blocked by the denyWrite policy and cannot be granted at runtime. Do not retry this path — use a different path, or ask user to update the denyWrite config.`;
       }
@@ -200,8 +268,6 @@ export default function (pi: ExtensionAPI) {
     if (choice === "abort") {
       return `Sandbox permission denied by user: ${request.access} "${path}"`;
     }
-
-    await applyPermissionChoice(request.access, path, choice, ctx);
     return `Sandbox permission granted: ${request.access} "${path}"`;
   }
 
