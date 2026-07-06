@@ -1,13 +1,17 @@
 diff --git a/dist/sandbox/linux-sandbox-utils.js b/dist/sandbox/linux-sandbox-utils.js
-index 135438668f40ca3b3b53f12e331ade4350cd30ac..7729fbc947d5981b8990fb1e9a7d6775d96283fb 100644
+index 135438668f40ca3b3b53f12e331ade4350cd30ac..3cb73e93b98aee0ea6c8628c356eef4b0f88d615 100644
 --- a/dist/sandbox/linux-sandbox-utils.js
 +++ b/dist/sandbox/linux-sandbox-utils.js
-@@ -100,7 +100,7 @@ function findFirstNonExistentComponent(targetPath) {
-  * With --max-depth limiting, this is fast enough to run on each command without memoization.
-  */
- async function linuxGetMandatoryDenyPaths(ripgrepConfig = { command: 'rg' }, maxDepth = DEFAULT_MANDATORY_DENY_SEARCH_DEPTH, allowGitConfig = false, abortSignal) {
--    const cwd = process.cwd();
-+    const cwd = process.env.PI_SANDBOX_CWD ?? process.cwd();
-     // Use provided signal or create a fallback controller
-     const fallbackController = new AbortController();
-     const signal = abortSignal ?? fallbackController.signal;
+@@ -197,7 +197,11 @@ async function linuxGetMandatoryDenyPaths(ripgrepConfig = { command: 'rg' }, max
+             denyPaths.push(absolutePath);
+         }
+     }
+-    return [...new Set(denyPaths)];
++    // Only deny paths that already exist on the host. Non-existent deny paths
++    // require bwrap to create mount-point files/directories in the workspace,
++    // which persist as "ghost" dotfiles if cleanup fails. Real ghosts (e.g.
++    // .git/hooks) are still protected because they exist on disk.
++    return [...new Set(denyPaths)].filter(p => fs.existsSync(p));
+ }
+ // Track mount points created by bwrap for non-existent deny paths.
+ // When bwrap does --ro-bind /dev/null /nonexistent/path, it creates an empty

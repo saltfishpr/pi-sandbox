@@ -307,8 +307,6 @@ export default function (pi: ExtensionAPI) {
     },
   });
 
-  pi.on("tool_call", handleToolCall);
-
   pi.on("session_start", async (_event, ctx) => {
     const noSandbox = pi.getFlag("no-sandbox") as boolean;
 
@@ -354,6 +352,8 @@ export default function (pi: ExtensionAPI) {
       ctx.ui.notify(`Sandbox initialization failed: ${err instanceof Error ? err.message : err}`, "error");
     }
   });
+
+  pi.on("tool_call", handleToolCall);
 
   pi.on("session_shutdown", async () => {
     if (sandboxInitialized) {

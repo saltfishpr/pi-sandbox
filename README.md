@@ -98,6 +98,7 @@ Field reference:
 
 - **Read**: allowed by default; matching `denyRead` triggers the authorization prompt; `allowRead` carves out exemptions inside `denyRead`.
 - **Write**: matching `denyWrite` blocks immediately with **no prompt**; matching `allowWrite` is allowed; anything else triggers the authorization prompt.
+- **Linux note**: when granting write access to a file, the parent directory must also be writable (bwrap requires parent write permission for `mv`/`rm` and other commands). The extension automatically requests permission for the parent directory on Linux.
 
 ### Path matching rules
 

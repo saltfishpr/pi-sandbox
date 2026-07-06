@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  '@anthropic-ai/sandbox-runtime@0.0.61': c6a4f88c6e4066af5dba3b52baee9138b97224a5ef1ddc372402231f22779bba
+  '@anthropic-ai/sandbox-runtime@0.0.61': 70e6c4d49589f30e081f1093a392c4868cb7b794333996e6670443003f83bcfd
 
 importers:
 
@@ -13,7 +13,7 @@ importers:
     dependencies:
       '@anthropic-ai/sandbox-runtime':
         specifier: ^0.0.61
-        version: 0.0.61(patch_hash=c6a4f88c6e4066af5dba3b52baee9138b97224a5ef1ddc372402231f22779bba)
+        version: 0.0.61(patch_hash=70e6c4d49589f30e081f1093a392c4868cb7b794333996e6670443003f83bcfd)
       defu:
         specifier: ^6.1.7
         version: 6.1.7
@@ -648,7 +648,7 @@ packages:
 
 snapshots:
 
-  '@anthropic-ai/sandbox-runtime@0.0.61(patch_hash=c6a4f88c6e4066af5dba3b52baee9138b97224a5ef1ddc372402231f22779bba)':
+  '@anthropic-ai/sandbox-runtime@0.0.61(patch_hash=70e6c4d49589f30e081f1093a392c4868cb7b794333996e6670443003f83bcfd)':
     dependencies:
       '@pondwader/socks5-server': 1.0.10
       commander: 12.1.0
