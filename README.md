@@ -71,7 +71,8 @@ Full example:
   "enabled": true,
   "network": {
     "allowedDomains": ["*"],
-    "deniedDomains": []
+    "deniedDomains": [],
+    "allowMachLookup": ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"]
   },
   "filesystem": {
     "denyRead": [".env", ".env.*"],
@@ -84,15 +85,16 @@ Full example:
 
 Field reference:
 
-| Field                    | Type       | Description                                                                   |
-| ------------------------ | ---------- | ----------------------------------------------------------------------------- |
-| `enabled`                | `boolean`  | Whether the sandbox is enabled; `false` behaves the same as `--no-sandbox`    |
-| `network.allowedDomains` | `string[]` | Domains allowed for network access; `"*"` allows all                          |
-| `network.deniedDomains`  | `string[]` | Domains explicitly denied                                                     |
-| `filesystem.denyRead`    | `string[]` | Matching paths trigger an interactive prompt (non-matching paths are allowed) |
-| `filesystem.allowRead`   | `string[]` | Exemptions carved out of `denyRead`                                           |
-| `filesystem.allowWrite`  | `string[]` | Paths allowed for writes; non-matching paths trigger an interactive prompt    |
-| `filesystem.denyWrite`   | `string[]` | Hard-deny writes; **no** authorization prompt is shown                        |
+| Field                     | Type       | Description                                                                   |
+| ------------------------- | ---------- | ----------------------------------------------------------------------------- |
+| `enabled`                 | `boolean`  | Whether the sandbox is enabled; `false` behaves the same as `--no-sandbox`    |
+| `network.allowedDomains`  | `string[]` | Domains allowed for network access; `"*"` allows all                          |
+| `network.deniedDomains`   | `string[]` | Domains explicitly denied                                                     |
+| `network.allowMachLookup` | `string[]` | macOS Mach services allowed for network configuration                         |
+| `filesystem.denyRead`     | `string[]` | Matching paths trigger an interactive prompt (non-matching paths are allowed) |
+| `filesystem.allowRead`    | `string[]` | Exemptions carved out of `denyRead`                                           |
+| `filesystem.allowWrite`   | `string[]` | Paths allowed for writes; non-matching paths trigger an interactive prompt    |
+| `filesystem.denyWrite`    | `string[]` | Hard-deny writes; **no** authorization prompt is shown                        |
 
 ### Permission rules
 

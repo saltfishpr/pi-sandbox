@@ -13,6 +13,10 @@ export const DEFAULT_CONFIG: SandboxConfig = {
   network: {
     allowedDomains: ["*"],
     deniedDomains: [],
+    allowMachLookup: [
+      "com.apple.SystemConfiguration.DNSConfiguration",
+      "com.apple.SystemConfiguration.configd",
+    ],
   },
   filesystem: {
     denyRead: [".env", ".env.*"],

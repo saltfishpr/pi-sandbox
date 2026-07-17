@@ -71,7 +71,8 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**（同�
   "enabled": true,
   "network": {
     "allowedDomains": ["*"],
-    "deniedDomains": []
+    "deniedDomains": [],
+    "allowMachLookup": ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"]
   },
   "filesystem": {
     "denyRead": [".env", ".env.*"],
@@ -84,15 +85,16 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**（同�
 
 字段说明：
 
-| 字段                     | 类型       | 说明                                               |
-| ------------------------ | ---------- | -------------------------------------------------- |
-| `enabled`                | `boolean`  | 是否启用沙箱，`false` 时行为与 `--no-sandbox` 等效 |
-| `network.allowedDomains` | `string[]` | 允许访问的域名，`"*"` 表示全部放行                 |
-| `network.deniedDomains`  | `string[]` | 显式拒绝的域名                                     |
-| `filesystem.denyRead`    | `string[]` | 命中则触发交互式授权（未命中默认放行）             |
-| `filesystem.allowRead`   | `string[]` | 在 `denyRead` 命中范围内的“豁免”路径               |
-| `filesystem.allowWrite`  | `string[]` | 允许写入的路径，未命中则触发交互式授权             |
-| `filesystem.denyWrite`   | `string[]` | 硬性拒绝写入，**不会**弹出授权提示                 |
+| 字段                      | 类型       | 说明                                               |
+| ------------------------- | ---------- | -------------------------------------------------- |
+| `enabled`                 | `boolean`  | 是否启用沙箱，`false` 时行为与 `--no-sandbox` 等效 |
+| `network.allowedDomains`  | `string[]` | 允许访问的域名，`"*"` 表示全部放行                 |
+| `network.deniedDomains`   | `string[]` | 显式拒绝的域名                                     |
+| `network.allowMachLookup` | `string[]` | macOS 网络配置允许访问的 Mach 服务                 |
+| `filesystem.denyRead`     | `string[]` | 命中则触发交互式授权（未命中默认放行）             |
+| `filesystem.allowRead`    | `string[]` | 在 `denyRead` 命中范围内的“豁免”路径               |
+| `filesystem.allowWrite`   | `string[]` | 允许写入的路径，未命中则触发交互式授权             |
+| `filesystem.denyWrite`    | `string[]` | 硬性拒绝写入，**不会**弹出授权提示                 |
 
 ### 权限规则
 
