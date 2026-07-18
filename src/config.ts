@@ -4,6 +4,8 @@ import { defu } from "defu";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
+import { logger } from "./logger.js";
+
 export interface SandboxConfig extends SandboxRuntimeConfig {
   enabled?: boolean;
 }
@@ -13,10 +15,7 @@ export const DEFAULT_CONFIG: SandboxConfig = {
   network: {
     allowedDomains: ["*"],
     deniedDomains: [],
-    allowMachLookup: [
-      "com.apple.SystemConfiguration.DNSConfiguration",
-      "com.apple.SystemConfiguration.configd",
-    ],
+    allowMachLookup: ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"],
   },
   filesystem: {
     denyRead: [".env", ".env.*"],
@@ -47,8 +46,8 @@ function readOrEmptyConfig(configPath: string): Partial<SandboxConfig> {
   if (!existsSync(configPath)) return {};
   try {
     return JSON.parse(readFileSync(configPath, "utf-8"));
-  } catch (e) {
-    console.error(`Warning: Could not parse ${configPath}: ${e}`);
+  } catch (error) {
+    logger.warn(`Could not parse ${configPath}: ${error}`);
     return {};
   }
 }
