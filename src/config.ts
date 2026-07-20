@@ -18,9 +18,8 @@ export const DEFAULT_CONFIG: SandboxConfig = {
     allowMachLookup: ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"],
   },
   filesystem: {
-    denyRead: [".env", ".env.*"],
-    allowRead: [],
-    allowWrite: ["."],
+    denyRead: ["~/.ssh"],
+    allowWrite: [".", "/tmp"],
     denyWrite: [".env", ".env.*"],
   },
 };

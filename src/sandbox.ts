@@ -1,7 +1,7 @@
 import { SandboxManager, type SandboxAskCallback } from "@anthropic-ai/sandbox-runtime";
 
-import { loadConfig, type SandboxConfig } from "./config.js";
 import { EOL } from "os";
+import { loadConfig, type SandboxConfig } from "./config.js";
 
 const enableLogMonitor = true;
 

@@ -14,11 +14,11 @@ import { dirname } from "node:path";
 import { Type } from "typebox";
 
 import { createSandboxedBashOps } from "./bash.js";
+import { Selector } from "./components/selector.js";
 import type { SandboxConfig } from "./config.js";
 import { addReadPathToConfig, addWritePathToConfig, getConfigPaths, loadConfig } from "./config.js";
 import { canonicalizePath, matchesPattern } from "./paths.js";
 import { annotateSandboxViolation, initializeSandbox, reinitializeSandbox, resetSandbox } from "./sandbox.js";
-import { Selector, SelectorItem } from "./components/selector.js";
 
 type FilesystemAccess = "read" | "write";
 type PermissionChoice = "abort" | "session" | "project" | "global";
