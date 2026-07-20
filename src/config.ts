@@ -46,18 +46,11 @@ function deepMerge(base: SandboxConfig, overrides: Partial<SandboxConfig>): Sand
   if (overrides.filesystem) {
     result.filesystem = { ...base.filesystem, ...overrides.filesystem };
   }
-
-  const extOverrides = overrides as {
-    ignoreViolations?: Record<string, string[]>;
-    enableWeakerNestedSandbox?: boolean;
-  };
-  const extResult = result as { ignoreViolations?: Record<string, string[]>; enableWeakerNestedSandbox?: boolean };
-
-  if (extOverrides.ignoreViolations) {
-    extResult.ignoreViolations = extOverrides.ignoreViolations;
+  if (overrides.ignoreViolations) {
+    result.ignoreViolations = overrides.ignoreViolations;
   }
-  if (extOverrides.enableWeakerNestedSandbox !== undefined) {
-    extResult.enableWeakerNestedSandbox = extOverrides.enableWeakerNestedSandbox;
+  if (overrides.enableWeakerNestedSandbox !== undefined) {
+    result.enableWeakerNestedSandbox = overrides.enableWeakerNestedSandbox;
   }
 
   return result;
