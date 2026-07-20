@@ -14,8 +14,8 @@ pi install git:github.com/saltfishpr/pi-sandbox
 
 Just run `pi` normally. When a session starts, the following defaults are applied:
 
-- **Read**: allow everything except `.env` and `.env.*`
-- **Write**: only allow the current working directory (`.`)
+- **Read**: allow everything except `.env`, `.env.*`, and `~/.ssh`, which require interactive authorization
+- **Write**: allow the current working directory (`.`) and `/tmp`; `.env` and `.env.*` are always denied
 - **Network**: all domains allowed (configurable)
 
 To disable the sandbox for a single launch:
@@ -59,7 +59,7 @@ Option meanings:
 
 ## Configuration
 
-pi-sandbox reads config from two locations. **Project config has higher priority** and overrides the global config field-by-field:
+pi-sandbox reads config from two locations. **Project config has higher priority**. `network` and `filesystem` are merged field-by-field, while array values are replaced rather than concatenated; omitted fields inherit the global config and then the defaults:
 
 - `~/.pi/agent/extensions/sandbox.json` (global)
 - `<cwd>/.pi/extensions/sandbox.json` (project-local)
@@ -75,9 +75,9 @@ Full example:
     "allowMachLookup": ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"]
   },
   "filesystem": {
-    "denyRead": [".env", ".env.*"],
+    "denyRead": [".env", ".env.*", "~/.ssh"],
     "allowRead": [],
-    "allowWrite": ["."],
+    "allowWrite": [".", "/tmp"],
     "denyWrite": [".env", ".env.*"]
   }
 }

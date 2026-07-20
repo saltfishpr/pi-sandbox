@@ -14,8 +14,8 @@ pi install git:github.com/saltfishpr/pi-sandbox
 
 正常运行 `pi` 即可。会话启动时使用如下默认配置：
 
-- **读**：除 `.env`、`.env.*` 外全部放行
-- **写**：仅允许当前工作目录（`.`）
+- **读**：除 `.env`、`.env.*` 和 `~/.ssh` 需要交互式授权外，其他路径全部放行
+- **写**：允许当前工作目录（`.`）和 `/tmp`；始终拒绝写入 `.env` 和 `.env.*`
 - **网络**：全部域名放行（可通过配置调整）
 
 若希望本次启动不启用沙箱，可加参数：
@@ -59,7 +59,7 @@ Grant this permission?
 
 ## 配置
 
-pi-sandbox 从两个位置读取配置，**项目配置优先级更高**（同字段直接覆盖全局）：
+pi-sandbox 从两个位置读取配置，**项目配置优先级更高**。数组会直接替换而非拼接；未指定的字段依次继承全局配置和默认配置：
 
 - `~/.pi/agent/extensions/sandbox.json`（全局）
 - `<cwd>/.pi/extensions/sandbox.json`（项目本地）
@@ -75,9 +75,9 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**（同�
     "allowMachLookup": ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"]
   },
   "filesystem": {
-    "denyRead": [".env", ".env.*"],
+    "denyRead": [".env", ".env.*", "~/.ssh"],
     "allowRead": [],
-    "allowWrite": ["."],
+    "allowWrite": [".", "/tmp"],
     "denyWrite": [".env", ".env.*"]
   }
 }

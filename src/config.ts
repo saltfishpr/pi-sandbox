@@ -1,6 +1,5 @@
 import type { SandboxRuntimeConfig } from "@anthropic-ai/sandbox-runtime";
 import { CONFIG_DIR_NAME, getAgentDir } from "@earendil-works/pi-coding-agent";
-import { defu } from "defu";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -18,7 +17,7 @@ export const DEFAULT_CONFIG: SandboxConfig = {
     allowMachLookup: ["com.apple.SystemConfiguration.DNSConfiguration", "com.apple.SystemConfiguration.configd"],
   },
   filesystem: {
-    denyRead: ["~/.ssh"],
+    denyRead: [".env", ".env.*", "~/.ssh"],
     allowWrite: [".", "/tmp"],
     denyWrite: [".env", ".env.*"],
   },
@@ -34,11 +33,41 @@ export function getConfigPaths(cwd: string): {
   };
 }
 
+// Merges top-level scalar options and shallow-merges network/filesystem objects.
+// Nested values such as arrays are replaced by overrides rather than concatenated;
+// undefined options preserve the corresponding value from base.
+function deepMerge(base: SandboxConfig, overrides: Partial<SandboxConfig>): SandboxConfig {
+  const result: SandboxConfig = { ...base };
+
+  if (overrides.enabled !== undefined) result.enabled = overrides.enabled;
+  if (overrides.network) {
+    result.network = { ...base.network, ...overrides.network };
+  }
+  if (overrides.filesystem) {
+    result.filesystem = { ...base.filesystem, ...overrides.filesystem };
+  }
+
+  const extOverrides = overrides as {
+    ignoreViolations?: Record<string, string[]>;
+    enableWeakerNestedSandbox?: boolean;
+  };
+  const extResult = result as { ignoreViolations?: Record<string, string[]>; enableWeakerNestedSandbox?: boolean };
+
+  if (extOverrides.ignoreViolations) {
+    extResult.ignoreViolations = extOverrides.ignoreViolations;
+  }
+  if (extOverrides.enableWeakerNestedSandbox !== undefined) {
+    extResult.enableWeakerNestedSandbox = extOverrides.enableWeakerNestedSandbox;
+  }
+
+  return result;
+}
+
 export function loadConfig(cwd: string): SandboxConfig {
   const { globalPath, projectPath } = getConfigPaths(cwd);
   const globalConfig = readOrEmptyConfig(globalPath);
   const projectConfig = readOrEmptyConfig(projectPath);
-  return defu(projectConfig, globalConfig, DEFAULT_CONFIG) as SandboxConfig;
+  return deepMerge(deepMerge(DEFAULT_CONFIG, globalConfig), projectConfig);
 }
 
 function readOrEmptyConfig(configPath: string): Partial<SandboxConfig> {
