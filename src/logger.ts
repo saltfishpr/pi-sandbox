@@ -11,8 +11,8 @@ export interface Logger {
   error(message: string, meta?: unknown): void;
 }
 
-// ~/.pi/agent/extensions/pi-sandbox/YYYY-MM-DD.log
-const LOG_DIR = path.join(getAgentDir(), "extensions", "pi-sandbox");
+// ~/.pi/agent/extensions/logs/YYYY-MM-DD.log
+const LOG_DIR = path.join(getAgentDir(), "extensions", "logs");
 
 let cachedLogger: winston.Logger | null = null;
 
