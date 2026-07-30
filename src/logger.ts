@@ -37,7 +37,7 @@ function buildLogger(): winston.Logger | null {
       transports: [
         new DailyRotateFile({
           dirname: LOG_DIR,
-          filename: "%DATE%.log",
+          filename: "pi-sandbox-%DATE%.log",
           datePattern: "YYYY-MM-DD",
           zippedArchive: false,
           maxSize: "10m",
