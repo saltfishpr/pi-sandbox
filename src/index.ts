@@ -1,4 +1,5 @@
 import { getPlatform } from "@anthropic-ai/sandbox-runtime/dist/utils/platform.js";
+import { Type } from "@earendil-works/pi-ai";
 import type {
   EditToolCallEvent,
   ExtensionAPI,
@@ -11,7 +12,6 @@ import type {
 import { createBashToolDefinition, isToolCallEventType, SettingsManager } from "@earendil-works/pi-coding-agent";
 import { existsSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { Type } from "typebox";
 
 import { createSandboxedBashOps } from "./bash.js";
 import { Selector } from "./components/selector.js";
