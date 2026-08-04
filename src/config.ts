@@ -57,6 +57,9 @@ function deepMerge(base: SandboxConfig, overrides: Partial<SandboxConfig>): Sand
 
 export function loadConfig(cwd: string): SandboxConfig {
   const { globalPath, projectPath } = getConfigPaths(cwd);
+  if (!existsSync(globalPath)) {
+    writeConfigFile(globalPath, DEFAULT_CONFIG);
+  }
   const globalConfig = readOrEmptyConfig(globalPath);
   const projectConfig = readOrEmptyConfig(projectPath);
   return deepMerge(deepMerge(DEFAULT_CONFIG, globalConfig), projectConfig);
