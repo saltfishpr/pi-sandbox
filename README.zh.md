@@ -110,6 +110,15 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**。数�
 - 相对路径基于当前工作目录解析
 - 符号链接会被解析为真实路径（`realpath`）
 
+### macOS `/tmp` 注意
+
+macOS 上 `/tmp` 是指向 `/private/tmp` 的符号链接。受 `@anthropic-ai/sandbox-runtime` 内部一处 boundary 检查影响，在 `allowWrite` 中直接配置根路径 `"/tmp"`（或 `"/tmp/"`）**不会**生效——沙箱 profile 仍会保留字面量 `/tmp`，而内核以 vnode 真实路径 `/private/tmp/...` 匹配 subpath 规则，因此写入会被拒绝。
+
+若要允许写入 `/tmp`，请使用以下形式之一：
+
+- 具体子路径，例如 `"/tmp/anything"`（`/tmp/` 下的子路径能被正确处理）
+- 或直接使用规范路径 `"/private/tmp"`
+
 ## License
 
 [MIT](./LICENSE)

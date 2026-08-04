@@ -110,6 +110,15 @@ Paths in config are processed as follows:
 - Relative paths are resolved against the current working directory
 - Symbolic links are resolved to their real paths (`realpath`)
 
+### macOS `/tmp` note
+
+On macOS `/tmp` is a symlink to `/private/tmp`. Due to a boundary check inside `@anthropic-ai/sandbox-runtime`, configuring the bare root `"/tmp"` (or `"/tmp/"`) in `allowWrite` does **not** take effect — the sandbox profile keeps the literal `/tmp`, but the kernel matches subpath rules against the vnode's real path `/private/tmp/...`, so writes get denied.
+
+To allow writes under `/tmp`, use one of:
+
+- a subpath such as `"/tmp/anything"` (subpaths under `/tmp/` are handled correctly)
+- the canonical form `"/private/tmp"`
+
 ## License
 
 [MIT](./LICENSE)

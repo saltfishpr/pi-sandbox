@@ -17,7 +17,7 @@ export const DEFAULT_CONFIG: SandboxConfig = {
   },
   filesystem: {
     denyRead: [".env", ".env.*", "~/.ssh"],
-    allowWrite: [".", "/tmp"],
+    allowWrite: ["."],
     denyWrite: [".env", ".env.*"],
   },
 };
