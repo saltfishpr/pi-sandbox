@@ -34,14 +34,17 @@ function getCustomConfig() {
   };
 }
 
-export function createSandboxedBashOps(shellPath?: string): BashOperations {
+export function createSandboxedBashOps(shellPath?: string, commandId?: string): BashOperations {
   const localOps = createLocalBashOperations({ shellPath });
   return {
     async exec(command, cwd, options) {
       const { shell } = getShellConfig(shellPath);
 
       const customConfig = getCustomConfig();
-      const wrappedCommand = await SandboxManager.wrapWithSandbox(command, shell, customConfig, options.signal);
+      const wrappedCommand = await SandboxManager.wrapWithSandbox(command, shell, customConfig, options.signal, {
+        commandId,
+        commandText: command,
+      });
 
       try {
         return await localOps.exec(wrappedCommand, cwd, options);

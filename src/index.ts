@@ -209,14 +209,14 @@ export default function (pi: ExtensionAPI) {
         return localBash.execute(id, params, signal, onUpdate, ctx);
       }
       const sandboxedBash = createBashToolDefinition(localCwd, {
-        operations: createSandboxedBashOps(userShellPath),
+        operations: createSandboxedBashOps(userShellPath, id),
         shellPath: userShellPath,
       });
       try {
         return await sandboxedBash.execute(id, params, signal, onUpdate, ctx);
       } catch (err) {
         if (err instanceof Error) {
-          err.message = annotateSandboxViolation(params.command, err.message);
+          err.message = annotateSandboxViolation(id, err.message);
         }
         throw err;
       }
