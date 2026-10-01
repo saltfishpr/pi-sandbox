@@ -94,6 +94,22 @@ export default function (pi: ExtensionAPI) {
 
     const accessLabel = access === "read" ? "Read" : "Write";
 
+    if (ctx.mode !== "tui") {
+      const choices: { label: string; value: PermissionChoice }[] = [
+        { label: "Abort (keep blocked)", value: "abort" },
+        { label: "Allow for this session only", value: "session" },
+        { label: "Allow for this project", value: "project" },
+        { label: "Allow for all projects", value: "global" },
+      ];
+      const selected = await ctx.ui.select(
+        `${accessLabel} access requested for: ${path}`,
+        choices.map((choice) => choice.label),
+      );
+      const choice = choices.find((choice) => choice.label === selected)?.value ?? "abort";
+      await applyPermissionChoice(ctx, access, path, choice);
+      return choice;
+    }
+
     const result = await ctx.ui.custom<PermissionChoice>((tui, theme, _kb, done) => {
       const selector = new Selector(theme, {
         title: `${accessLabel} file`,
@@ -212,14 +228,16 @@ export default function (pi: ExtensionAPI) {
         operations: createSandboxedBashOps(userShellPath, id),
         shellPath: userShellPath,
       });
-      try {
-        return await sandboxedBash.execute(id, params, signal, onUpdate, ctx);
-      } catch (err) {
-        if (err instanceof Error) {
-          err.message = annotateSandboxViolation(id, err.message);
-        }
-        throw err;
+      const result = await sandboxedBash.execute(id, params, signal, onUpdate, ctx);
+      if (result.isError) {
+        return {
+          ...result,
+          content: result.content.map((content) =>
+            content.type === "text" ? { ...content, text: annotateSandboxViolation(id, content.text) } : content,
+          ),
+        };
       }
+      return result;
     },
   });
 
@@ -291,6 +309,7 @@ export default function (pi: ExtensionAPI) {
         description: "The filesystem path being requested. Relative paths, ~, and absolute paths are accepted.",
       }),
     }),
+    exposure: "model-only",
     async execute(_id, params, _signal, _onUpdate, ctx) {
       if (!sandboxEnabled || !sandboxInitialized) {
         return {
