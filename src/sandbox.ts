@@ -18,6 +18,7 @@ export async function initializeSandbox(config: SandboxConfig): Promise<void> {
     createNetworkAskCallback(),
     enableLogMonitor,
   );
+  process.env.CLAUDE_CODE_TMPDIR = process.env.TMPDIR || "/tmp";
 }
 
 export async function reinitializeSandbox(
