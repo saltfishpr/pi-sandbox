@@ -1,3 +1,4 @@
+import type { FilesystemPathEntry } from "@anthropic-ai/sandbox-runtime";
 import { existsSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { basename, dirname, resolve } from "node:path";
@@ -36,14 +37,14 @@ export function canonicalizePath(filePath: string): string {
   }
 }
 
-export function matchesPattern(filePath: string, patterns: string[]): boolean {
+export function matchesPattern(filePath: string, patterns: FilesystemPathEntry[]): boolean {
   const abs = canonicalizePath(filePath);
-  return patterns.some((p) => {
-    const absP = p.includes("*") ? expandPath(p) : canonicalizePath(p);
-    if (p.includes("*")) {
-      const escaped = absP.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
+  return patterns.some((entry) => {
+    if (typeof entry === "string" && entry.includes("*")) {
+      const escaped = expandPath(entry).replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*/g, ".*");
       return new RegExp(`^${escaped}$`).test(abs);
     }
+    const absP = canonicalizePath(typeof entry === "string" ? entry : entry.path);
     const sep = absP.endsWith("/") ? "" : "/";
     return abs === absP || abs.startsWith(absP + sep);
   });

@@ -1,3 +1,4 @@
+import type { FilesystemPathEntry } from "@anthropic-ai/sandbox-runtime";
 import { getPlatform } from "@anthropic-ai/sandbox-runtime/dist/utils/platform.js";
 import { Type } from "@earendil-works/pi-ai";
 import type {
@@ -47,12 +48,12 @@ export default function (pi: ExtensionAPI) {
   const sessionAllowedReadPaths: string[] = [];
   const sessionAllowedWritePaths: string[] = [];
 
-  function getEffectiveAllowRead(cwd: string): string[] {
+  function getEffectiveAllowRead(cwd: string): FilesystemPathEntry[] {
     const config = loadConfig(cwd);
     return [...(config.filesystem?.allowRead ?? []), ...sessionAllowedReadPaths, ...sessionAllowedWritePaths];
   }
 
-  function getEffectiveAllowWrite(cwd: string): string[] {
+  function getEffectiveAllowWrite(cwd: string): FilesystemPathEntry[] {
     const config = loadConfig(cwd);
     return [...(config.filesystem?.allowWrite ?? []), ...sessionAllowedWritePaths];
   }
@@ -444,6 +445,8 @@ export default function (pi: ExtensionAPI) {
 
       const config = loadConfig(ctx.cwd);
       const { globalPath, projectPath } = getConfigPaths(ctx.cwd);
+      const formatPaths = (entries?: FilesystemPathEntry[]) =>
+        entries?.map((entry) => (typeof entry === "string" ? entry : JSON.stringify(entry))).join(", ") || "(none)";
 
       const lines = [
         "Sandbox Configuration",
@@ -451,10 +454,10 @@ export default function (pi: ExtensionAPI) {
         `  Global config:  ${globalPath}`,
         "",
         "Filesystem (bash + read/write/edit tools):",
-        `  Deny Read:   ${config.filesystem?.denyRead?.join(", ") || "(none)"}`,
-        `  Allow Read:  ${config.filesystem?.allowRead?.join(", ") || "(none)"}`,
-        `  Allow Write: ${config.filesystem?.allowWrite?.join(", ") || "(none)"}`,
-        `  Deny Write:  ${config.filesystem?.denyWrite?.join(", ") || "(none)"}`,
+        `  Deny Read:   ${formatPaths(config.filesystem?.denyRead)}`,
+        `  Allow Read:  ${formatPaths(config.filesystem?.allowRead)}`,
+        `  Allow Write: ${formatPaths(config.filesystem?.allowWrite)}`,
+        `  Deny Write:  ${formatPaths(config.filesystem?.denyWrite)}`,
         ...(sessionAllowedReadPaths.length > 0 ? [`  Session read:  ${sessionAllowedReadPaths.join(", ")}`] : []),
         ...(sessionAllowedWritePaths.length > 0 ? [`  Session write: ${sessionAllowedWritePaths.join(", ")}`] : []),
         "",
