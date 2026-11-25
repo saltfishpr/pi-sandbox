@@ -1,10 +1,10 @@
 # pi-sandbox
 
-A [Pi](https://pi.dev/) extension that provides OS-level sandbox isolation for bash commands and read/write/edit tools, enforces filesystem path policies, and supports interactive authorization within a session.
-
-Built on top of [`@anthropic-ai/sandbox-runtime`](https://www.npmjs.com/package/@anthropic-ai/sandbox-runtime). It only takes effect on **macOS** and **Linux**; on other platforms it automatically falls back to no sandbox.
+A [Pi](https://pi.dev/) extension for **macOS** and **Linux**. It sandboxes Bash commands with [`@anthropic-ai/sandbox-runtime`](https://www.npmjs.com/package/@anthropic-ai/sandbox-runtime) and provides path permissions and interactive approval for Pi's `read`, `write`, and `edit` tools.
 
 ## Installation
+
+Requires Node.js 22.12.0 or later.
 
 ```bash
 pi install git:github.com/saltfishpr/pi-sandbox
@@ -15,8 +15,8 @@ pi install git:github.com/saltfishpr/pi-sandbox
 Just run `pi` normally. When a session starts, the following defaults are applied:
 
 - **Read**: allow everything except `.env`, `.env.*`, and `~/.ssh`, which require interactive authorization
-- **Write**: allow the current working directory (`.`) and `/tmp`; `.env` and `.env.*` are always denied
-- **Network**: all domains allowed (configurable)
+- **Write**: allow the current working directory (`.`) and deny writes to `.env` and `.env.*`.
+- **Network**: the domain allowlist defaults to `["*"]`.
 
 To disable the sandbox for a single launch:
 
@@ -24,7 +24,7 @@ To disable the sandbox for a single launch:
 pi --no-sandbox
 ```
 
-When the agent tries to access a denied path, an interactive prompt is shown:
+When approval is required, Pi prompts for the scope of the grant:
 
 ```
 Write file
@@ -77,7 +77,7 @@ Full example:
   "filesystem": {
     "denyRead": [".env", ".env.*", "~/.ssh"],
     "allowRead": [],
-    "allowWrite": [".", "/tmp"],
+    "allowWrite": ["."],
     "denyWrite": [".env", ".env.*"]
   }
 }
@@ -85,24 +85,26 @@ Full example:
 
 Field reference:
 
-| Field                     | Type       | Description                                                                   |
-| ------------------------- | ---------- | ----------------------------------------------------------------------------- |
-| `enabled`                 | `boolean`  | Whether the sandbox is enabled; `false` behaves the same as `--no-sandbox`    |
-| `network.allowedDomains`  | `string[]` | Domains allowed for network access; `"*"` allows all                          |
-| `network.deniedDomains`   | `string[]` | Domains explicitly denied                                                     |
-| `network.allowMachLookup` | `string[]` | macOS Mach services allowed for network configuration                         |
-| `filesystem.denyRead`     | `string[]` | Matching paths trigger an interactive prompt (non-matching paths are allowed) |
-| `filesystem.allowRead`    | `string[]` | Exemptions carved out of `denyRead`                                           |
-| `filesystem.allowWrite`   | `string[]` | Paths allowed for writes; non-matching paths trigger an interactive prompt    |
-| `filesystem.denyWrite`    | `string[]` | Hard-deny writes; **no** authorization prompt is shown                        |
+| Field | Type | Description |
+| --- | --- | --- |
+| `enabled` | `boolean` | Enable the sandbox |
+| `network.allowedDomains` | `string[]` | Domain allowlist |
+| `network.deniedDomains` | `string[]` | Domain denylist |
+| `network.allowMachLookup` | `string[]` | Mach services accessible on macOS |
+| `filesystem.denyRead` | `PathEntry[]` | Paths that require approval to read |
+| `filesystem.allowRead` | `PathEntry[]` | Paths readable without approval |
+| `filesystem.allowWrite` | `PathEntry[]` | Paths writable without approval |
+| `filesystem.denyWrite` | `PathEntry[]` | Paths where writes are blocked |
 
 ### Permission rules
 
-- **Read**: allowed by default; matching `denyRead` triggers the authorization prompt; `allowRead` carves out exemptions inside `denyRead`.
-- **Write**: matching `denyWrite` blocks immediately with **no prompt**; matching `allowWrite` is allowed; anything else triggers the authorization prompt.
-- **Linux note**: when granting write access to a file, the parent directory must also be writable (bwrap requires parent write permission for `mv`/`rm` and other commands). The extension automatically requests permission for the parent directory on Linux.
+- **Read**: allowed by default. `allowRead` takes precedence over `denyRead`.
+- **Write**: `denyWrite` takes precedence over `allowWrite`. If neither matches, Pi prompts for approval.
+- **Linux**: Bash write access to a file is requested for its parent directory.
 
 ### Path matching rules
+
+A `PathEntry` is a string or an object such as `{ "path": "/work/report*.txt", "literal": true }`. Use the object form to treat wildcard characters as part of the path name.
 
 Paths in config are processed as follows:
 
@@ -110,14 +112,7 @@ Paths in config are processed as follows:
 - Relative paths are resolved against the current working directory
 - Symbolic links are resolved to their real paths (`realpath`)
 
-### macOS `/tmp` note
-
-On macOS `/tmp` is a symlink to `/private/tmp`. Due to a boundary check inside `@anthropic-ai/sandbox-runtime`, configuring the bare root `"/tmp"` (or `"/tmp/"`) in `allowWrite` does **not** take effect — the sandbox profile keeps the literal `/tmp`, but the kernel matches subpath rules against the vnode's real path `/private/tmp/...`, so writes get denied.
-
-To allow writes under `/tmp`, use one of:
-
-- a subpath such as `"/tmp/anything"` (subpaths under `/tmp/` are handled correctly)
-- the canonical form `"/private/tmp"`
+On macOS, use `/private/tmp` in `allowWrite` to allow writes anywhere under `/tmp`.
 
 ## License
 

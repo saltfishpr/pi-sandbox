@@ -1,10 +1,10 @@
 # pi-sandbox
 
-[Pi](https://pi.dev/) 扩展，为 bash 命令和 read/write/edit 工具提供操作系统级沙箱隔离，实施文件系统路径策略管控，支持 session 内交互式授权。
-
-底层基于 [`@anthropic-ai/sandbox-runtime`](https://www.npmjs.com/package/@anthropic-ai/sandbox-runtime)，仅在 **macOS** 和 **Linux** 上生效；其他平台会自动回退为不启用沙箱。
+[Pi](https://pi.dev/) 扩展，支持 **macOS** 和 **Linux**。使用 [`@anthropic-ai/sandbox-runtime`](https://www.npmjs.com/package/@anthropic-ai/sandbox-runtime) 隔离 Bash 命令，并为 Pi 的 `read`、`write`、`edit` 工具提供路径权限检查和交互式授权。
 
 ## 安装
+
+需要 Node.js 22.12.0 或更高版本。
 
 ```bash
 pi install git:github.com/saltfishpr/pi-sandbox
@@ -15,8 +15,8 @@ pi install git:github.com/saltfishpr/pi-sandbox
 正常运行 `pi` 即可。会话启动时使用如下默认配置：
 
 - **读**：除 `.env`、`.env.*` 和 `~/.ssh` 需要交互式授权外，其他路径全部放行
-- **写**：允许当前工作目录（`.`）和 `/tmp`；始终拒绝写入 `.env` 和 `.env.*`
-- **网络**：全部域名放行（可通过配置调整）
+- **写**：允许当前工作目录（`.`），禁止写入 `.env` 和 `.env.*`。
+- **网络**：域名白名单默认为 `["*"]`。
 
 若希望本次启动不启用沙箱，可加参数：
 
@@ -24,7 +24,7 @@ pi install git:github.com/saltfishpr/pi-sandbox
 pi --no-sandbox
 ```
 
-当代理尝试访问被拒路径时会弹出交互式提示：
+需要授权时，Pi 会提示选择授权范围：
 
 ```
 Write file
@@ -77,7 +77,7 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**。数�
   "filesystem": {
     "denyRead": [".env", ".env.*", "~/.ssh"],
     "allowRead": [],
-    "allowWrite": [".", "/tmp"],
+    "allowWrite": ["."],
     "denyWrite": [".env", ".env.*"]
   }
 }
@@ -85,24 +85,26 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**。数�
 
 字段说明：
 
-| 字段                      | 类型       | 说明                                               |
-| ------------------------- | ---------- | -------------------------------------------------- |
-| `enabled`                 | `boolean`  | 是否启用沙箱，`false` 时行为与 `--no-sandbox` 等效 |
-| `network.allowedDomains`  | `string[]` | 允许访问的域名，`"*"` 表示全部放行                 |
-| `network.deniedDomains`   | `string[]` | 显式拒绝的域名                                     |
-| `network.allowMachLookup` | `string[]` | macOS 网络配置允许访问的 Mach 服务                 |
-| `filesystem.denyRead`     | `string[]` | 命中则触发交互式授权（未命中默认放行）             |
-| `filesystem.allowRead`    | `string[]` | 在 `denyRead` 命中范围内的“豁免”路径               |
-| `filesystem.allowWrite`   | `string[]` | 允许写入的路径，未命中则触发交互式授权             |
-| `filesystem.denyWrite`    | `string[]` | 硬性拒绝写入，**不会**弹出授权提示                 |
+| 字段                      | 类型          | 说明                         |
+| ------------------------- | ------------- | ---------------------------- |
+| `enabled`                 | `boolean`     | 是否启用沙箱                 |
+| `network.allowedDomains`  | `string[]`    | 域名白名单                   |
+| `network.deniedDomains`   | `string[]`    | 域名黑名单                   |
+| `network.allowMachLookup` | `string[]`    | macOS 上允许访问的 Mach 服务 |
+| `filesystem.denyRead`     | `PathEntry[]` | 需要授权才能读取的路径       |
+| `filesystem.allowRead`    | `PathEntry[]` | 直接允许读取的路径           |
+| `filesystem.allowWrite`   | `PathEntry[]` | 直接允许写入的路径           |
+| `filesystem.denyWrite`    | `PathEntry[]` | 禁止写入的路径               |
 
 ### 权限规则
 
-- **读**：默认放行；命中 `denyRead` 会触发授权提示；`allowRead` 用于在 `denyRead` 命中范围内做例外豁免。
-- **写**：命中 `denyWrite` 直接阻断且**不弹提示**；命中 `allowWrite` 放行；未命中则触发授权提示。
-- **Linux 注意**：授予文件写权限时，父目录也需要可写（bwrap 执行 `mv`/`rm` 等命令需要父目录写权限）。扩展会在 Linux 上自动请求父目录的权限。
+- **读**：默认允许。`allowRead` 优先于 `denyRead`。
+- **写**：`denyWrite` 优先于 `allowWrite`。两者均未命中时请求授权。
+- **Linux**：文件的 Bash 写入授权按父目录申请。
 
 ### 路径匹配规则
+
+`PathEntry` 可以是字符串，也可以是 `{ "path": "/work/report*.txt", "literal": true }` 这样的对象。如果通配符是路径名的一部分，使用对象形式。
 
 配置中的路径经过以下处理：
 
@@ -110,14 +112,7 @@ pi-sandbox 从两个位置读取配置，**项目配置优先级更高**。数�
 - 相对路径基于当前工作目录解析
 - 符号链接会被解析为真实路径（`realpath`）
 
-### macOS `/tmp` 注意
-
-macOS 上 `/tmp` 是指向 `/private/tmp` 的符号链接。受 `@anthropic-ai/sandbox-runtime` 内部一处 boundary 检查影响，在 `allowWrite` 中直接配置根路径 `"/tmp"`（或 `"/tmp/"`）**不会**生效——沙箱 profile 仍会保留字面量 `/tmp`，而内核以 vnode 真实路径 `/private/tmp/...` 匹配 subpath 规则，因此写入会被拒绝。
-
-若要允许写入 `/tmp`，请使用以下形式之一：
-
-- 具体子路径，例如 `"/tmp/anything"`（`/tmp/` 下的子路径能被正确处理）
-- 或直接使用规范路径 `"/private/tmp"`
+在 macOS 上，要允许写入整个 `/tmp`，请在 `allowWrite` 中填写 `/private/tmp`。
 
 ## License
 
